@@ -1,8 +1,10 @@
+
 #include <iostream>
 
 class no {
 	private:
 		int num;
+		int bal;
 		no* esq;
 		no* dir;
 		no* pai;
@@ -13,6 +15,20 @@ class no {
 			esq = 
 			dir = NULL;
 		}
+
+	//Os métodos sets são usados para definir valor de uma variável do nó e os gets para retornar os valores
+	
+	void balEsq() { //Se um nó vai à esquerda do nó atual, o fator de balanceamento aumenta em 1
+		bal++;
+	}
+
+	void balDir() { //Se um nó vai à direita do nó atual, o fator de balanceamento diminui em 1
+		bal--;
+	}
+
+	int getBal() {
+		return bal;
+	}
 
 	void setPai(no* p) {
 		pai = p;
@@ -98,16 +114,19 @@ class arvore {
 						b->setDir((*r));
 				}
 				
+				//std::cout << (*r)->getNum() << std::endl;
 				balanc((*r));
 				return;
 			}
 
 			//Caso contrário, faz a chamada recursiva para a esquerda ou direita
 			else if((*r)->getNum() > n) {
+				(*r)->balEsq();
 				return insereNoRec(n, (*r)->getEndEsq(), (*r));
 			}
 
 			else {
+				(*r)->balDir();
 				return insereNoRec(n, (*r)->getEndDir(), (*r));
 			}
 
@@ -283,45 +302,39 @@ class arvore {
 		} */
 
 		void balanc(no* mBaixo) { //Pega o último nó inserido
-			std::cout << "Teste" << std::endl;
-			if (mBaixo == raiz || mBaixo->getPai() == NULL || mBaixo->getPai()->getPai()) //Caso seja raiz ou o pai ou avô não existam, não tem necessidade de fazer operação
+			std::cout << mBaixo->getNum() << std::endl;
+			if (mBaixo == raiz || mBaixo->getPai() == NULL) {//Caso seja raiz ou o pai ou avô não existam, não tem necessidade de fazer operação
 				return;
-			std::cout<< "teste2" << std::endl;
+			}
 			no* p = mBaixo->getPai(); //Pai do nó inserido
-			std::cout<< "test6" << std::endl;
-			no* avo = p->getPai(); //Avô do nó inserido
-			std::cout << "teste 7" << std::endl;
-			
+			no* avo;
+			if (p->getPai())
+				avo = p->getPai(); //Avô do nó inserido
+			else {
+				return;
+			}			
 			if (fatorBal(avo) > 1) { //Árvore pendendo para a esquerda
-			std::cout << "teste3" << std::endl;
 				if (mBaixo == p->getDir()) //Se o nó mais baixo está à direita, faz a rotação dupla direita
 					rotacao_dd(avo, mBaixo);
 				else //Do contrário, faz a rotação simples direita
 					rotacao_sd(avo);
 			}
 			if (fatorBal(avo) < 1 ) { //Análogo ao if acima
-			std::cout << "teste 4" << std::endl;
 				if (mBaixo == p->getEsq())
 					rotacao_de(avo, mBaixo);
 				else
 					rotacao_se(avo);
 			}
-			std::cout << "teste5" << std::endl;
 			balanc(mBaixo->getPai());
 		}
 
 
 		int fatorBal(no* r) {
-			std::cout << "Teste9" << std::endl;
 			int f = 0;
-			std::cout << "Teste9.5" << std::endl;
 			if (r->getEsq()) {
-				std::cout << "Teste10" << std::endl;
 				f = f + altura(r->getEsq());
 			}
-			if (r->getDir())
-			{
-				std::cout << "Teste11" << std::endl;
+			if (r->getDir()) {
 				f = f - altura(r->getDir());
 			}
 			return f;
@@ -329,7 +342,6 @@ class arvore {
 
 
 		int altura (no* r) {
-			std::cout << "Teste 8" << std::endl;
 			int altEsq = 0;
 			int altDir = 0;
 
@@ -356,6 +368,8 @@ int main() {
 	arvore avl;
 	avl.insereNo(50);
 	avl.insereNo(40);
+	no* aux = avl.buscaNo(40);
+	std::cout << aux->getPai()->getNum() << std::endl;
 	avl.insereNo(60);
 	avl.insereNo(30);
 	avl.insereNo(55);
@@ -369,6 +383,8 @@ int main() {
 	
 	if (!avl.buscaNo(30))
 		std::cout << "Não encontrado" << std::endl;
+
+	
 
 	
 } 
