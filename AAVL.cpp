@@ -1,4 +1,3 @@
-
 #include <iostream>
 
 class no {
@@ -11,6 +10,7 @@ class no {
 	public:
 		no(int n) {
 			num = n;
+			bal = 0;
 			pai =
 			esq = 
 			dir = NULL;
@@ -114,8 +114,8 @@ class arvore {
 						b->setDir((*r));
 				}
 				
-				//std::cout << (*r)->getNum() << std::endl;
 				balanc((*r));
+
 				return;
 			}
 
@@ -130,6 +130,100 @@ class arvore {
 				return insereNoRec(n, (*r)->getEndDir(), (*r));
 			}
 
+		}
+
+			void balanc(no* mBaixo) { //Pega o último nó inserido
+			if (mBaixo == raiz || mBaixo->getPai() == NULL) {//Caso seja raiz ou o pai ou avô não existam, não tem necessidade de fazer operação
+				return;
+			}
+			no* p = mBaixo->getPai(); //Pai do nó inserido
+			no* avo;
+			if (p->getPai())
+				avo = p->getPai(); //Avô do nó inserido
+			else {
+				return;
+			}			
+			if (avo->getBal() > 1) { //Árvore pendendo para a esquerda
+				if (mBaixo == p->getDir()) //Se o nó mais baixo está à direita, faz a rotação dupla direita
+					rotacao_dd(avo, mBaixo);
+				else //Do contrário, faz a rotação simples direita
+					rotacao_sd(avo);
+			}
+			if (avo->getBal() < 1 ) { //Análogo ao if acima
+				if (mBaixo == p->getEsq())
+					rotacao_de(avo, mBaixo);
+				else
+					rotacao_se(avo);
+			}
+			balanc(mBaixo->getPai());
+		}		
+
+
+		void rotacao_sd(no* r) { //Rotação simples à direita
+			no* aux = r->getEsq();
+			aux->setPai(r->getPai());
+			if (r != raiz)
+				r->getPai()->setEsq(aux); //Coloca o nó esquerdo do nó desequilibrado na posição esquerda de seu pai
+			else 
+				raiz = aux;
+			
+			if (aux->getDir()) {
+				r->setEsq(aux->getDir()); //Coloca o nó direito do antigo esquerdo de r na esquerda dele
+				r->balEsq();
+			}
+			aux->setDir(r); //coloca r na direita de seu antigo nó esquerdo
+			aux->balDir(); //Atualiza balanceamento do nó atual
+			no* atualizaBal = aux->getPai();
+			while(atualizaBal != NULL) { //Atualiza balanceamento do pai do atual até a raiz
+				atualizaBal->balDir();
+				atualizaBal = atualizaBal->getPai();
+			}
+
+			return;
+
+		}
+
+
+			void rotacao_se(no* r) { //Rotação simples à esquerda
+			no* aux = r->getDir();
+			if (r != raiz)
+				r->getPai()->setDir(aux); //Coloca o nó direito do nó desequilibrado na posição direita de seu pai
+			else 
+				raiz = aux;
+
+			if (aux->getDir()) {
+				r->setDir(aux->getEsq()); //Coloca o nó esquerdo do antigo direito de r na direita dele
+				r->balDir(); //Atualiza o balanceamento do nó
+			}
+			aux->setEsq(r); //coloca r na esquerda de seu antigo nó direito
+			aux->balDir(); //Atualiza balanceamento do nó atual
+			no* atualizaBal = aux->getPai(); 
+			while(atualizaBal != NULL) { //Atualiza balanceamento do pai do atual até a raiz
+				atualizaBal->balDir();
+				atualizaBal = atualizaBal->getPai();
+			}
+			
+			return;
+		}
+
+
+		void rotacao_dd (no* r, no* folha) { //rotação dupla à direita
+			no* aux = folha->getPai(); //Pega o pai da folha
+			aux->getPai()->setEsq(folha); // Seta a folha como filho esquerdo de seu avô
+			folha->setEsq(aux); //Seta o pai da folha como seu filho esquerdo
+			aux->setDir(NULL); //retira filho direito do antigo pai da folha
+			aux->balEsq(); //Atualiza balanceamento de antigo pai da folha
+			rotacao_sd(r);
+		}
+
+
+		void rotacao_de (no* r, no* folha) { //Análogo à função acima
+			no* aux = folha->getPai();
+			aux->getPai()->setDir(folha);
+			folha->setDir(aux);
+			aux->setEsq(NULL);
+			aux->balDir();
+			rotacao_se(r);
 		}
 
 
@@ -189,11 +283,15 @@ class arvore {
 			if (r->getEsq()!= NULL && r->getDir() == NULL) { //Caso o nó só tenha filho esquerdo
 				if (r != raiz) { //Caso o nó não seja a raiz
 					no* aux = r->getPai();	
-					if (aux->getEsq() == r) { //Se a ser removido for o esquerdo de seu pai, seta seu filho como filho esquerdo do avô
+					if (aux->getEsq() == r) { //Seo nó a ser removido for o esquerdo de seu pai, seta seu filho como filho esquerdo do avô
 						aux->setEsq(r->getEsq());
+						aux->balDir(); // Atualiza balanceamento
+						balanc(aux->getEsq()); //Refaz bakanceamento da árvore, caso necessário
 					}
 					else { //Do contrário, seta o filho como filho direito do avô
 						aux->setDir(r->getEsq());
+						aux->balEsq();
+							balanc(aux->getDir());
 					}
 					delete r; //Deleta o nó
 				}
@@ -203,14 +301,18 @@ class arvore {
 				}
 				return true; //Indica que que nó foi removido
 			}
-			if (r->getEsq()== NULL && r->getDir() != NULL) { //Caso o nó a ser removido só tenha filho direito, faz operações análogas ao do caso acima
+			if (r->getEsq()== NULL && r->getDir() != NULL) { //Caso o nó a ser removido só tenha filho direito, faz operações análogas às do caso acima
 				if (r != raiz) {
 					no* aux = r->getPai();	
 					if (aux->getEsq() == r) {
 						aux->setEsq(r->getDir());
+						aux->balDir();
+							balanc(aux->getEsq());
 					}
 					else {
 						aux->setDir(r->getDir());
+						aux->balEsq();
+							balanc(aux->getDir());
 					}
 					delete r;
 				}
@@ -238,153 +340,63 @@ class arvore {
 			return menorDir(atual->getEsq(), atual);
 		}
 
-
-		void rotacao_sd(no* r) { //Rotação simples à direita
-			no* aux = r->getEsq();
-			if (r != raiz)
-				r->getPai()->setEsq(aux); //Coloca o nó esquerdo do nó desequilibrado na posição esquerda de seu pai
-			else 
-				raiz = aux;
-			
-			r->setEsq(aux->getDir()); //Coloca o nó direito do antigo esquerdo de r na esquerda dele
-			aux->setDir(r); //coloca r na direita de seu antigo nó esquerdo
-			return;
-
-		}
-
-
-			void rotacao_se(no* r) { //Rotação simples à esquerda
-			no* aux = r->getDir();
-			if (r != raiz)
-				r->getPai()->setDir(aux); //Coloca o nó direito do nó desequilibrado na posição direita de seu pai
-			else 
-				raiz = aux;
-			r->setDir(aux->getEsq()); //Coloca o nó esquerdo do antigo direito de r na direita dele
-			aux->setEsq(r); //coloca r na esquerda de seu antigo nó direito
-			
-			return;
-		}
-
-
-		void rotacao_dd (no* r, no* folha) { //rotação dupla à direita
-			no* aux = folha->getPai();
-			aux->getPai()->setEsq(folha);
-			folha->setEsq(aux);
-			aux->setDir(NULL);
-			rotacao_sd(r);
-		}
-
-
-		void rotacao_de (no* r, no* folha) {
-			no* aux = folha->getPai();
-			aux->getPai()->setDir(folha);
-			folha->setDir(aux);
-			aux->setEsq(NULL);
-			rotacao_se(r);
-		}
-
-	/*	no* buscaMinEsq(no *r) { //Encontra a folha da árvore do lado esquerdo
-			if (r->getEsq() == NULL && r->getDir() == NULL)
-				return r;
-			if (r->getEsq())
-				return buscaMinEsq(r->getEsq());
-			
-			return buscaMinEsq(r->getDir());
-		}
-
-		no* buscaMinDir(no *r) { //Encontra a folha da árvore do lado direito
-			if (r->getEsq() == NULL && r->getDir() == NULL)
-				return r;
-			if (r->getDir())
-				return buscaMinDir(r->getDir());
-			
-			return buscaMinDir(r->getEsq());
-		} */
-
-		void balanc(no* mBaixo) { //Pega o último nó inserido
-			std::cout << mBaixo->getNum() << std::endl;
-			if (mBaixo == raiz || mBaixo->getPai() == NULL) {//Caso seja raiz ou o pai ou avô não existam, não tem necessidade de fazer operação
-				return;
-			}
-			no* p = mBaixo->getPai(); //Pai do nó inserido
-			no* avo;
-			if (p->getPai())
-				avo = p->getPai(); //Avô do nó inserido
-			else {
-				return;
-			}			
-			if (fatorBal(avo) > 1) { //Árvore pendendo para a esquerda
-				if (mBaixo == p->getDir()) //Se o nó mais baixo está à direita, faz a rotação dupla direita
-					rotacao_dd(avo, mBaixo);
-				else //Do contrário, faz a rotação simples direita
-					rotacao_sd(avo);
-			}
-			if (fatorBal(avo) < 1 ) { //Análogo ao if acima
-				if (mBaixo == p->getEsq())
-					rotacao_de(avo, mBaixo);
-				else
-					rotacao_se(avo);
-			}
-			balanc(mBaixo->getPai());
-		}
-
-
-		int fatorBal(no* r) {
-			int f = 0;
-			if (r->getEsq()) {
-				f = f + altura(r->getEsq());
-			}
-			if (r->getDir()) {
-				f = f - altura(r->getDir());
-			}
-			return f;
-		}
-
-
-		int altura (no* r) {
-			int altEsq = 0;
-			int altDir = 0;
-
-			if (r->getEsq())
-				altEsq = altura(r->getEsq());
-			if (r->getDir())
-				altDir = altura(r->getDir());
-
-			return max(altEsq, altDir) +1;
-
-		}
-
-
-		int max(int a, int b) { //retorna o maior número
-			if (a > b)
-				return a;
-			else
-				return b;
-		}
-		
 };
 
 int main() {
 	arvore avl;
-	avl.insereNo(50);
-	avl.insereNo(40);
-	no* aux = avl.buscaNo(40);
-	std::cout << aux->getPai()->getNum() << std::endl;
-	avl.insereNo(60);
-	avl.insereNo(30);
-	avl.insereNo(55);
-	avl.insereNo(20);
-	//std::cout << avl.altura(avl.getRaiz()) << std::endl;
+	bool continuar = 1;
+	int nEsc, n;
+	while(continuar) {
+		bool flag = true;
+		char cont;
+		std::cout << "*************  ÁRVORE BINÁRIA  *************" << std::endl;
+		while (true) {
+			std::cout << "Digite 1 para inserir número na árvore\n2 para verificar se há determinado número na árvore\n3 para excluir número da árvore\n4 para encerrar" << std::endl;
+			std::cin >> nEsc;
+			if (nEsc == 1 || nEsc == 2 || nEsc == 3 || nEsc == 4)
+				break;
+			std::cout << "Opção não existe! Você deve digitar um número inteiro entre 0 e 4" << std::endl;
+		}
+		switch(nEsc) {
+			case 1:
+				std::cin >> n;
+				avl.insereNo(n);
+				std::cout << "Valor " << n << " inserido!" << std::endl; 
+				break;
 
-	if (avl.buscaNo(30))
-		std::cout << "Encontrado" << std::endl;
-	if (avl.removeNo(30))
-		std::cout << "Removido" << std::endl;
-	
-	if (!avl.buscaNo(30))
-		std::cout << "Não encontrado" << std::endl;
+			case 2:
+				std::cin >> n;
+				if (avl.buscaVal(n))
+					std::cout << "Valor encontrado!" << std::endl;
+				else 
+					std::cout << "Valor não existe na árvore!" << std::endl;
+				break;
 
-	
+			case 3:
+				std::cin >> n;
+				if (avl.removeNo(n))
+					std::cout << "Nó " << n << " removido!" << std::endl;
+				else 
+					std::cout << "Erro! Valor não existe na árvore!" << std::endl;
+				break;
 
+			case 4:
+				flag = false;
+				break;
+
+		}
+		if (!flag)
+			break;
+		while (true) {
+			std::cout << "Deseja continuar? [S/N]" << std::endl;
+			std::cin >> cont;
+			if (cont == 'N' or cont == 'n' or cont == 'S' or cont == 's')
+				break;
+			
+			std::cout << "Valor inválido! Digite S ou N" << std::endl;
+		}
+		if (cont == 'N' || cont == 'n')
+			continuar = false;
+	}
 	
 } 
